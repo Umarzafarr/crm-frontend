@@ -79,6 +79,18 @@ const getLegacyCategoryForCustomCategory = (category?: CustomCategory): Contact[
   return LEGACY_CATEGORY_BY_NAME[category.name.trim().toLowerCase()];
 };
 
+const PRICE_RANGES = [
+  { label: '$0 - $250,000', min: 0, max: 250000 },
+  { label: '$250,000 - $500,000', min: 250000, max: 500000 },
+  { label: '$500,000 - $750,000', min: 500000, max: 750000 },
+  { label: '$750,000 - $1,000,000', min: 750000, max: 1000000 },
+  { label: '$1,000,000 - $1,500,000', min: 1000000, max: 1500000 },
+  { label: '$1,500,000 - $2,000,000', min: 1500000, max: 2000000 },
+  { label: '$2,000,000 - $2,500,000', min: 2000000, max: 2500000 },
+  { label: '$2,500,000 - $3,000,000', min: 2500000, max: 3000000 },
+  { label: '$3,000,000+', min: 3000000, max: undefined },
+];
+
 const Contacts: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -105,8 +117,7 @@ const Contacts: React.FC = () => {
   }, [searchTerm]);
   const [selectedCustomCategoryId, setSelectedCustomCategoryId] = useState<number | 'ALL'>('ALL');
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [priceRange, setPriceRange] = useState<string>('ALL');
   const [sortBy, setSortBy] = useState<string>('fullName');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [importSuccess, setImportSuccess] = useState<{ imported: number; failed: number } | null>(null);
@@ -181,8 +192,16 @@ const Contacts: React.FC = () => {
     setError(null);
 
     try {
-      const parsedMinPrice = minPrice.trim() ? Number(minPrice) : undefined;
-      const parsedMaxPrice = maxPrice.trim() ? Number(maxPrice) : undefined;
+      let minPriceVal: number | undefined;
+      let maxPriceVal: number | undefined;
+
+      if (priceRange !== 'ALL') {
+        const range = PRICE_RANGES[Number(priceRange)];
+        if (range) {
+          minPriceVal = range.min;
+          maxPriceVal = range.max;
+        }
+      }
 
       const selectedCategory = selectedCustomCategoryId !== 'ALL'
         ? customCategories.find((category) => category.id === Number(selectedCustomCategoryId))
@@ -195,8 +214,8 @@ const Contacts: React.FC = () => {
         take: rowsPerPage,
         category: legacyCategory,
         customCategoryId: selectedCustomCategoryId !== 'ALL' && !legacyCategory ? selectedCustomCategoryId : undefined,
-        minPrice: Number.isNaN(parsedMinPrice) ? undefined : parsedMinPrice,
-        maxPrice: Number.isNaN(parsedMaxPrice) ? undefined : parsedMaxPrice,
+        minPrice: minPriceVal,
+        maxPrice: maxPriceVal,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
         sortBy,
         sortOrder: sortDirection,
@@ -239,7 +258,7 @@ const Contacts: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, searchTerm, selectedCustomCategoryId, selectedTagIds, minPrice, maxPrice, sortBy, sortDirection]);
+  }, [page, rowsPerPage, searchTerm, selectedCustomCategoryId, selectedTagIds, priceRange, sortBy, sortDirection]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -314,8 +333,7 @@ const Contacts: React.FC = () => {
     setSearchTerm('');
     setSelectedCustomCategoryId('ALL');
     setSelectedTagIds([]);
-    setMinPrice('');
-    setMaxPrice('');
+    setPriceRange('ALL');
     setPage(0);
   };
 
@@ -420,8 +438,11 @@ const Contacts: React.FC = () => {
       <Paper sx={{ mb: 3 }}>
         <Box p={2}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            {/* Row 1: Search */}
+            <Grid item xs={12} sm={6} md={3.6}>
               <TextField
+                fullWidth
+                size="small"
                 label="Search by full name"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -434,7 +455,8 @@ const Contacts: React.FC = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={3}>
+            {/* Row 1: Category */}
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel id="custom-category-filter-label">Category</InputLabel>
                 <Select
@@ -471,7 +493,8 @@ const Contacts: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={3}>
+            {/* Row 1: Tags */}
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth size="small">
                 <InputLabel id="tag-filter-label">Tags</InputLabel>
                 <Select
@@ -501,46 +524,39 @@ const Contacts: React.FC = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={2}>
-              <Button fullWidth variant="outlined" onClick={clearFilters}>
+            {/* Row 1: Clear */}
+            <Grid item xs={12} sm={6} md={2.4}>
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={clearFilters}
+                sx={{ height: 40 }}
+              >
                 Clear
               </Button>
             </Grid>
 
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Min Price"
-                type="text"
-                value={minPrice}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (/^\d*$/.test(value)) {
-                    setMinPrice(value);
+            {/* Row 2: Price Range */}
+            <Grid item xs={12} sm={6} md={3.6}>
+              <FormControl fullWidth size="small">
+                <InputLabel id="price-range-filter-label">Price Range</InputLabel>
+                <Select
+                  labelId="price-range-filter-label"
+                  value={priceRange}
+                  label="Price Range"
+                  onChange={(event) => {
+                    setPriceRange(event.target.value);
                     setPage(0);
-                  }
-                }}
-                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Max Price"
-                type="text"
-                value={maxPrice}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (/^\d*$/.test(value)) {
-                    setMaxPrice(value);
-                    setPage(0);
-                  }
-                }}
-                inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
-              />
+                  }}
+                >
+                  <MenuItem value="ALL">All Prices</MenuItem>
+                  {PRICE_RANGES.map((range, index) => (
+                    <MenuItem key={index} value={String(index)}>
+                      {range.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
           </Grid>
         </Box>
