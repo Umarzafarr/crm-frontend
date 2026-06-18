@@ -34,7 +34,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { contactService } from '../services/contact.service';
 import { formatDate, formatContactCategory, formatPhoneNumber } from '../utils/format';
-import { Contact } from '../types';
+import { Contact, CustomCategory } from '../types';
+import { customCategoryService } from '../services/customCategory.service';
+import { getContrastText, resolveContactCategoryColor, resolveContactCategoryName } from '../utils/categoryColors';
 import ContactInteractionLog from '../components/contacts/ContactInteractionLog';
 
 // Function to get category priority for sorting
@@ -54,12 +56,22 @@ const DueContacts: React.FC = () => {
   const navigate = useNavigate();
 
   const [dueContacts, setDueContacts] = useState<Contact[]>([]);
+  const [customCategories, setCustomCategories] = useState<CustomCategory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [interactionModalOpen, setInteractionModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categories = await customCategoryService.getCustomCategories();
+        setCustomCategories(categories);
+      } catch (error) {
+        console.error('Failed to load custom categories:', error);
+      }
+    };
+
     const fetchDueContacts = async () => {
       setLoading(true);
       try {
@@ -80,6 +92,7 @@ const DueContacts: React.FC = () => {
       }
     };
 
+    loadCategories();
     fetchDueContacts();
   }, []);
 
@@ -129,16 +142,14 @@ const DueContacts: React.FC = () => {
               {contact.fullName}
             </Typography>
             <Chip
-              label={formatContactCategory(contact.category)}
+              label={resolveContactCategoryName(contact, customCategories)}
               size="small"
-              color={
-                contact.category === 'HOTLIST' ? 'error' :
-                  contact.category === 'A_LIST' ? 'primary' :
-                    contact.category === 'B_LIST' ? 'secondary' :
-                      contact.category === 'C_LIST' ? 'info' : 'default'
-
-              }
-              sx={{ mt: 0.5 }}
+              sx={{
+                bgcolor: resolveContactCategoryColor(contact, customCategories),
+                color: getContrastText(resolveContactCategoryColor(contact, customCategories)),
+                fontWeight: 500,
+                mt: 0.5
+              }}
             />
           </Box>
           <Button
@@ -266,16 +277,15 @@ const DueContacts: React.FC = () => {
                       >
                         <TableCell>{contact.fullName}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={formatContactCategory(contact.category)}
-                            size="small"
-                            color={
-                              contact.category === 'HOTLIST' ? 'error' :
-                                contact.category === 'A_LIST' ? 'primary' :
-                                  contact.category === 'B_LIST' ? 'secondary' :
-                                    contact.category === 'C_LIST' ? 'info' : 'default'
-                            }
-                          />
+                           <Chip
+                             label={resolveContactCategoryName(contact, customCategories)}
+                             size="small"
+                             sx={{
+                               bgcolor: resolveContactCategoryColor(contact, customCategories),
+                               color: getContrastText(resolveContactCategoryColor(contact, customCategories)),
+                               fontWeight: 500,
+                             }}
+                           />
                         </TableCell>
                         <TableCell>{formatPhoneNumber(contact.phone)}</TableCell>
                         <TableCell>{contact.email}</TableCell>

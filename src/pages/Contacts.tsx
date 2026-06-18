@@ -49,7 +49,7 @@ import { contactService } from '../services/contact.service';
 import { customCategoryService } from '../services/customCategory.service';
 import { tagService } from '../services/tag.service';
 import { formatDate, formatContactCategory, formatPhoneNumber } from '../utils/format';
-import { getCategoryColor, getContrastText } from '../utils/categoryColors';
+import { getCategoryColor, getContrastText, resolveContactCategoryColor, resolveContactCategoryName } from '../utils/categoryColors';
 import { Contact, CustomCategory, Tag } from '../types';
 import ContactForm from '../components/contacts/ContactForm';
 import ContactBulkImport from '../components/contacts/ContactBulkImport';
@@ -136,26 +136,12 @@ const Contacts: React.FC = () => {
     return `$${Number(price).toLocaleString()}`;
   };
 
-  const getContactCustomCategory = (contact: Contact) => {
-    return contact.customCategory || customCategories.find((category) => category.id === Number(contact.customCategoryId));
-  };
-
-  const getContactCategoryName = (contact: Contact) => {
-    const category = getContactCustomCategory(contact);
-    return category?.name || formatContactCategory(contact.category);
-  };
-
-  const getContactCategoryColor = (contact: Contact) => {
-    const category = getContactCustomCategory(contact);
-    return getCategoryColor(category?.color || contact.category);
-  };
-
   const renderCategoryChip = (contact: Contact) => {
-    const categoryColor = getContactCategoryColor(contact);
+    const categoryColor = resolveContactCategoryColor(contact, customCategories);
 
     return (
       <Chip
-        label={getContactCategoryName(contact)}
+        label={resolveContactCategoryName(contact, customCategories)}
         size="small"
         sx={{
           bgcolor: categoryColor,

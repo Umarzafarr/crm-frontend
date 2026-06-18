@@ -242,7 +242,7 @@ const Dashboard: React.FC = () => {
                             width: 14,
                             height: 14,
                             borderRadius: '50%',
-                            bgcolor: getCategoryColor(stat.color, index),
+                            bgcolor: getCategoryColor(stat.color || stat.name, index),
                             mr: 1.5,
                             flexShrink: 0,
                           }}

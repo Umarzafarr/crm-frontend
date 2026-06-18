@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import { contactService } from '../services/contact.service';
 import { formatDate, formatContactCategory, formatPhoneNumber } from '../utils/format';
-import { getCategoryColor, getContrastText } from '../utils/categoryColors';
+import { getCategoryColor, getContrastText, resolveContactCategoryColor, resolveContactCategoryName } from '../utils/categoryColors';
 import { Contact, CustomCategory } from '../types';
 import ContactForm from '../components/contacts/ContactForm';
 import ContactInteractionLog from '../components/contacts/ContactInteractionLog';
@@ -171,20 +171,7 @@ const ContactDetail: React.FC = () => {
     return `$${Number(price).toLocaleString()}`;
   };
 
-  const getContactCustomCategory = () => {
-    if (!contact) return undefined;
-    return contact.customCategory || customCategories.find((category) => category.id === Number(contact.customCategoryId));
-  };
 
-  const getCategoryName = () => {
-    const category = getContactCustomCategory();
-    return category?.name || (contact ? formatContactCategory(contact.category) : '');
-  };
-
-  const getCurrentCategoryColor = () => {
-    const category = getContactCustomCategory();
-    return getCategoryColor(category?.color || contact?.category);
-  };
 
   const getTags = () => contact?.tags?.map((contactTag) => contactTag.tag).filter(Boolean) || [];
 
@@ -278,10 +265,10 @@ const ContactDetail: React.FC = () => {
             )}
           </Box>
           <Chip
-            label={getCategoryName()}
+            label={resolveContactCategoryName(contact, customCategories)}
             sx={{
-              bgcolor: getCurrentCategoryColor(),
-              color: getContrastText(getCurrentCategoryColor()),
+              bgcolor: resolveContactCategoryColor(contact, customCategories),
+              color: getContrastText(resolveContactCategoryColor(contact, customCategories)),
               fontWeight: 500,
             }}
           />
