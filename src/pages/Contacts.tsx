@@ -131,6 +131,15 @@ const Contacts: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
 
+  const selectedCategory = selectedCustomCategoryId !== 'ALL'
+    ? customCategories.find((category) => category.id === Number(selectedCustomCategoryId))
+    : undefined;
+  const legacyCategory = getLegacyCategoryForCustomCategory(selectedCategory);
+
+  useEffect(() => {
+    setPage(0);
+  }, [selectedCustomCategoryId, legacyCategory]);
+
   const formatPrice = (price?: number) => {
     if (price === undefined || price === null) return 'N/A';
     return `$${Number(price).toLocaleString()}`;
@@ -189,17 +198,12 @@ const Contacts: React.FC = () => {
         }
       }
 
-      const selectedCategory = selectedCustomCategoryId !== 'ALL'
-        ? customCategories.find((category) => category.id === Number(selectedCustomCategoryId))
-        : undefined;
-      const legacyCategory = getLegacyCategoryForCustomCategory(selectedCategory);
-
       const params = {
         search: searchTerm || undefined,
         skip: page * rowsPerPage,
         take: rowsPerPage,
         category: legacyCategory,
-        customCategoryId: selectedCustomCategoryId !== 'ALL' && !legacyCategory ? selectedCustomCategoryId : undefined,
+        customCategoryId: selectedCustomCategoryId !== 'ALL' ? Number(selectedCustomCategoryId) : undefined,
         minPrice: minPriceVal,
         maxPrice: maxPriceVal,
         tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
@@ -216,11 +220,6 @@ const Contacts: React.FC = () => {
         // still display/filter them correctly on the frontend. For default custom categories, old legacy
         // contacts are preserved by matching the old category enum.
         if (selectedCustomCategoryId !== 'ALL') {
-          const selectedCategory = customCategories.find(
-            (category) => category.id === Number(selectedCustomCategoryId)
-          );
-          const legacyCategory = getLegacyCategoryForCustomCategory(selectedCategory);
-
           visibleContacts = visibleContacts.filter((contact) => {
             if (Number(contact.customCategoryId || contact.customCategory?.id) === Number(selectedCustomCategoryId)) {
               return true;
@@ -231,7 +230,7 @@ const Contacts: React.FC = () => {
         }
 
         setContacts(visibleContacts);
-        setTotalContacts(selectedCustomCategoryId !== 'ALL' ? visibleContacts.length : result.total);
+        setTotalContacts(result.total);
       } else {
         setContacts([]);
         setTotalContacts(0);
@@ -244,7 +243,7 @@ const Contacts: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, searchTerm, selectedCustomCategoryId, selectedTagIds, priceRange, sortBy, sortDirection]);
+  }, [page, rowsPerPage, searchTerm, selectedCustomCategoryId, selectedTagIds, priceRange, sortBy, sortDirection, legacyCategory]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
